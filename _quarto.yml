@@ -1,2 +1,4 @@
 project:
   title: "quarto pdf"
+  render:
+    - test.qmd
