@@ -1,0 +1,47 @@
+name: Render Quarto PDF and Upload
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      # Trigger only when relevant files change
+      - "**.qmd"
+      - "_quarto.yml"
+  workflow_dispatch:
+
+jobs:
+  build-pdf:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to push to the branch
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          tinytex: true # Installs TinyTeX for PDF rendering
+
+      - name: Render Quarto Project to PDF
+        uses: quarto-dev/quarto-actions/render@v2
+        with:
+          to: pdf
+
+      - name: Prepare Output Folder
+        run: |
+          mkdir output_upload
+          # Find the rendered PDF and copy it to the upload folder
+          # Adjust the source path if your PDF is in _book/ or _output/
+          cp *.pdf output_upload/ || cp _book/*.pdf output_upload/ || cp _output/*.pdf output_upload/
+
+      - name: Upload PDF to Branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./output_upload  # The folder containing ONLY your PDF
+          publish_branch: pdf-output    # The branch to upload to (will be created if missing)
+          commit_message: "Update rendered PDF [skip ci]"
+          force_orphan: true            # Optional: keeps the pdf branch clean (1 commit history)
